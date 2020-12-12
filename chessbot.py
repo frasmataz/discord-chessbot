@@ -21,52 +21,84 @@ client = commands.Bot(command_prefix = '!')
 @client.event
 async def on_ready():
     global board
+    global state
+
     print(f'{client.user} has connected to Discord!')
     board = chess.Board()
+
+    state = {}
+
+    state['player_color'] = chess.WHITE
 
 @client.command()
 async def resetboard(ctx):
     global board
+    global state
+
     board = chess.Board()
-    await ctx.send(print_board(board, get_emojis(ctx)))
+    await print_board(ctx, board, state)
 
 @client.command()
 async def move(ctx, move):
     global board
+    global state
+
     try:
         board.push_san(move)
     except ValueError:
-        await ctx.send('you can\'t do that you tit')
+        await print_msg(ctx, 'you can\'t do that you tit')
         return
 
-    await ctx.send(print_board(board, get_emojis(ctx)))
+    await print_board(ctx, board, state)
+    
 
 @client.command()
 async def getlegalmoves(ctx):
     global board
     out = 'Your current legal moves are: \n'
     for move in board.legal_moves:
-        out = out + str(move) + ', '
+        out = out + str(board.san(move)) + ', '
 
-    await ctx.send(out)
+    await print_msg(ctx, out)
 
 @client.command()
 async def ping(ctx):
     print('pinged');
-    await ctx.send('pong')
+    await ctx.send('bing')
+    await ctx.send('bong')
+    await ctx.send('donkey kong')
 
-@client.command()
-async def testboard(ctx):
-    await ctx.send(print_board(board, get_emojis(ctx)))
+async def print_status(ctx, board, state):
+    out = ''
+    
+    out = out + 'Turn {}, '.format(board.fullmove_number)
 
-@client.command()
-async def testemoj(ctx):
-    emojis = get_emojis(ctx)
-    emoji = emojis['dark_square']['k']
-    msg = 'shleeeem ' + emoji
+    if board.is_game_over():
+        if board.is_checkmate():
+            out = out + 'Checkmate bitch\n'
+        elif board.is_stalemate():
+            out = out + 'Stalemate.\n'
+    else:
+        if board.turn == chess.WHITE:
+            out = out + 'white to play\n'
+        elif board.turn == chess.BLACK:
+            out = out + 'black to play\n'
+
+        if board.is_check():
+            out = out + 'Check!\n'
+
+        if state['player_color'] == board.turn:
+            out = out + 'It is your move\n'
+
+    await print_msg(ctx, out)
+    
+async def print_msg(ctx, msg):
+    print(msg)
     await ctx.send(msg)
 
-def print_board(board, emojis):
+async def print_board(ctx, board, state):
+    emojis = get_emojis(ctx)
+
     out = ''
     for rank in range(7, -1, -1):
         out = out + emojis[str(rank+1)]
@@ -85,7 +117,9 @@ def print_board(board, emojis):
     
     for i in range (1, 9):
         out = out + emojis[n2l(i)]
-    return out
+
+    await ctx.send(out)
+    await print_status(ctx, board, state)
             
 
 def get_emoji_code(emoji_name, ctx):
