@@ -20,7 +20,35 @@ client = commands.Bot(command_prefix = '!')
 
 @client.event
 async def on_ready():
+    global board
     print(f'{client.user} has connected to Discord!')
+    board = chess.Board()
+
+@client.command()
+async def resetboard(ctx):
+    global board
+    board = chess.Board()
+    await ctx.send(print_board(board, get_emojis(ctx)))
+
+@client.command()
+async def move(ctx, move):
+    global board
+    try:
+        board.push_san(move)
+    except ValueError:
+        await ctx.send('you can\'t do that you tit')
+        return
+
+    await ctx.send(print_board(board, get_emojis(ctx)))
+
+@client.command()
+async def getlegalmoves(ctx):
+    global board
+    out = 'Your current legal moves are: \n'
+    for move in board.legal_moves:
+        out = out + str(move) + ', '
+
+    await ctx.send(out)
 
 @client.command()
 async def ping(ctx):
@@ -29,7 +57,6 @@ async def ping(ctx):
 
 @client.command()
 async def testboard(ctx):
-    board = chess.Board("r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4")
     await ctx.send(print_board(board, get_emojis(ctx)))
 
 @client.command()
@@ -42,6 +69,7 @@ async def testemoj(ctx):
 def print_board(board, emojis):
     out = ''
     for rank in range(7, -1, -1):
+        out = out + emojis[str(rank+1)]
         for file_ in range(0, 8):
             square_color = 'light_square' if (rank % 2 == 0) != (file_ % 2 == 0) else 'dark_square'
             piece = board.piece_at(chess.square(file_, rank))
@@ -53,6 +81,10 @@ def print_board(board, emojis):
 
             out = out + emoji
         out = out + '\n'
+    out = out + emojis['axis']
+    
+    for i in range (1, 9):
+        out = out + emojis[n2l(i)]
     return out
             
 
@@ -91,8 +123,37 @@ def get_emojis(ctx):
             'r': get_emoji_code('brbs', ctx),
             'q': get_emoji_code('bqbs', ctx),
             'k': get_emoji_code('bkbs', ctx)
-        }
+        },
+        'a': ':regional_indicator_a:',
+        'b': ':regional_indicator_b:',
+        'c': ':regional_indicator_c:',
+        'd': ':regional_indicator_d:',
+        'e': ':regional_indicator_e:',
+        'f': ':regional_indicator_f:',
+        'g': ':regional_indicator_g:',
+        'h': ':regional_indicator_h:',
+        '1': ':one:',
+        '2': ':two:',
+        '3': ':three:',
+        '4': ':four:',
+        '5': ':five:',
+        '6': ':six:',
+        '7': ':seven:',
+        '8': ':eight:',
+        'axis': ':heart_decoration:'
     }
+
+def n2l(n):
+    return {
+        1: 'a',
+        2: 'b',
+        3: 'c',
+        4: 'd',
+        5: 'e',
+        6: 'f',
+        7: 'g',
+        8: 'h'
+    }[n]
 
 #If there is an error, it will answer with an error
 @client.event
