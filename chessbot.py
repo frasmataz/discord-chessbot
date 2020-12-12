@@ -1,3 +1,4 @@
+import chess
 import os
 import json
 from pprint import pprint
@@ -28,14 +29,32 @@ async def ping(ctx):
 
 @client.command()
 async def testboard(ctx):
-    await ctx.send(':brws::bnbs::bbws::bqbs::bkws::bbbs::bnws::brbs:\n:bpbs::bpws::bpbs::bpws::bpbs::bpws::bpbs::bpws:\n:white_large_square::black_large_square::white_large_square::black_large_square::white_large_square::black_large_square::white_large_square::black_large_square:\n:black_large_square::white_large_square::black_large_square::white_large_square::black_large_square::white_large_square::black_large_square::white_large_square:\n:white_large_square::black_large_square::white_large_square::black_large_square::white_large_square::black_large_square::white_large_square::black_large_square:\n:black_large_square::white_large_square::black_large_square::white_large_square::black_large_square::white_large_square::black_large_square::white_large_square:\n:wpws::wpbs::wpws::wpbs::wpws::wpbs::wpws::wpbs:\n:wrbs::wnws::wbbs::wqws::wkbs::wbws::wnbs::wrws:')
+    board = chess.Board("r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4")
+    await ctx.send(print_board(board, get_emojis(ctx)))
 
 @client.command()
 async def testemoj(ctx):
     emojis = get_emojis(ctx)
-    emoji = emojis['dark_square']['white']['knight']
+    emoji = emojis['dark_square']['k']
     msg = 'shleeeem ' + emoji
     await ctx.send(msg)
+
+def print_board(board, emojis):
+    out = ''
+    for rank in range(7, -1, -1):
+        for file_ in range(0, 8):
+            square_color = 'light_square' if (rank % 2 == 0) != (file_ % 2 == 0) else 'dark_square'
+            piece = board.piece_at(chess.square(file_, rank))
+            
+            emoji = emojis[square_color]['empty']
+
+            if piece != None:
+                emoji = emojis[square_color][piece.symbol()]
+
+            out = out + emoji
+        out = out + '\n'
+    return out
+            
 
 def get_emoji_code(emoji_name, ctx):
     emoji = get(ctx.message.guild.emojis, name=emoji_name)
@@ -45,41 +64,33 @@ def get_emojis(ctx):
     return {
         'light_square': {
             'empty': ':white_large_square:',
-            'white': {
-                'pawn': get_emoji_code('wpws', ctx),
-                'knight': get_emoji_code('wnws', ctx),
-                'bishop': get_emoji_code('wbws', ctx),
-                'rook': get_emoji_code('wrws', ctx),
-                'queen': get_emoji_code('wqws', ctx),
-                'king': get_emoji_code('wkws', ctx)
-            },
-            'black': {
-                'pawn': get_emoji_code('bpws', ctx),
-                'knight': get_emoji_code('bnws', ctx),
-                'bishop': get_emoji_code('bbws', ctx),
-                'rook': get_emoji_code('brws', ctx),
-                'queen': get_emoji_code('bqws', ctx),
-                'king': get_emoji_code('bkws', ctx)
-            }
+            'P': get_emoji_code('wpws', ctx),
+            'N': get_emoji_code('wnws', ctx),
+            'B': get_emoji_code('wbws', ctx),
+            'R': get_emoji_code('wrws', ctx),
+            'Q': get_emoji_code('wqws', ctx),
+            'K': get_emoji_code('wkws', ctx),
+            'p': get_emoji_code('bpws', ctx),
+            'n': get_emoji_code('bnws', ctx),
+            'b': get_emoji_code('bbws', ctx),
+            'r': get_emoji_code('brws', ctx),
+            'q': get_emoji_code('bqws', ctx),
+            'k': get_emoji_code('bkws', ctx)
         },
         'dark_square': {
             'empty': ':black_large_square:',
-            'white': {
-                'pawn': get_emoji_code('wpbs', ctx),
-                'knight': get_emoji_code('wnbs', ctx),
-                'bishop': get_emoji_code('wbbs', ctx),
-                'rook': get_emoji_code('wrbs', ctx),
-                'queen': get_emoji_code('wqbs', ctx),
-                'king': get_emoji_code('wkbs', ctx)
-            },
-            'black': {
-                'pawn': get_emoji_code('bpbs', ctx),
-                'knight': get_emoji_code('bnbs', ctx),
-                'bishop': get_emoji_code('bbbs', ctx),
-                'rook': get_emoji_code('brbs', ctx),
-                'queen': get_emoji_code('bqbs', ctx),
-                'king': get_emoji_code('bkbs', ctx)
-            }
+            'P': get_emoji_code('wpbs', ctx),
+            'N': get_emoji_code('wnbs', ctx),
+            'B': get_emoji_code('wbbs', ctx),
+            'R': get_emoji_code('wrbs', ctx),
+            'Q': get_emoji_code('wqbs', ctx),
+            'K': get_emoji_code('wkbs', ctx),
+            'p': get_emoji_code('bpbs', ctx),
+            'n': get_emoji_code('bnbs', ctx),
+            'b': get_emoji_code('bbbs', ctx),
+            'r': get_emoji_code('brbs', ctx),
+            'q': get_emoji_code('bqbs', ctx),
+            'k': get_emoji_code('bkbs', ctx)
         }
     }
 
