@@ -27,7 +27,11 @@ async def on_ready():
     global state
 
     print(f'{client.user} has connected to Discord!')
-    board = chess.Board()
+
+    try:
+        board = load_state_from_file()
+    except:
+        board = chess.Board()
 
     state = {}
 
@@ -73,6 +77,11 @@ async def move(ctx, move_str=None):
     except e:
         await print_msg(ctx, 'okay i didn\'t understand that, and i don\'t know why i didn\'t understand that')
         return
+
+    try:
+        save_state_to_file(board)
+    except:
+        await print_msg(ctx, 'Something went wrong saving game')
     
     await print_board(ctx, board, state)
 
@@ -80,6 +89,12 @@ async def move(ctx, move_str=None):
         await game_over(ctx, board, state)
     else:
         await ai_move(ctx, board, state)
+
+        try:
+            save_state_to_file(board)
+        except:
+            await print_msg(ctx, 'Something went wrong saving game')
+
         if board.is_game_over():
             await game_over(ctx, board, state)
 
@@ -91,6 +106,20 @@ async def legalmoves(ctx):
         out = out + str(board.san(move)) + ', '
 
     await print_msg(ctx, out)
+
+@client.command()
+async def save(ctx):
+    global board
+    fen = board.fen()
+    await ctx.send('Game state: `{}`'.format(fen))
+
+@client.command()
+async def load(ctx, fen):
+    global board
+    global state
+
+    board = chess.Board(fen)
+    await print_board(ctx, board, state)
 
 @client.command()
 async def ping(ctx):
@@ -137,7 +166,7 @@ i didn't come up with this don't get mad at me
 async def game_over(ctx, board, state):
     await print_msg(ctx, 'GAME OVER');
     if board.result() == '1-0':
-        await print_msg(ctx, 'YOU FUCKING WON YOU MAD CUNTS @here');
+        await print_msg(ctx, 'YOU FUCKING WON YOU MAD CUNTS');
     elif board.result() == '0-1':
         await print_msg(ctx, 'you lost and you suck');
     elif board.result() == '1/2-1/2':
@@ -145,6 +174,19 @@ async def game_over(ctx, board, state):
     await print_msg(ctx, 'Move list if you want to analyse this game for some reason');
     await print_msg(ctx, chess.Board().variation_san(board.move_stack)); 
     await print_msg(ctx, 'Type !reset to play again');
+
+def save_state_to_file(board):
+    with open('state.fen', 'w') as f:
+        f.seek(0)
+        f.write(board.fen())
+        f.truncate()
+
+def load_state_from_file():
+    with open('state.fen', 'r') as f:
+        fen = f.read()
+        print(fen)
+        board = chess.Board(fen)
+        return board
 
 def is_legal_move(board, san):
     try:
