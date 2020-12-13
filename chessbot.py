@@ -65,7 +65,7 @@ async def move(ctx, move_str=None):
         return
    
     if is_legal_move(board, move_str) == False:
-        await print_msg(ctx, 'that\'s not something you can do')
+        await print_msg(ctx, 'that\'s not something you can do, use !legalmoves to get all legal moves')
         return
     
     try:
@@ -73,15 +73,20 @@ async def move(ctx, move_str=None):
     except e:
         await print_msg(ctx, 'okay i didn\'t understand that, and i don\'t know why i didn\'t understand that')
         return
-
-    await print_board(ctx, board, state)
-    await ai_move(ctx, board, state)
     
+    await print_board(ctx, board, state)
+
+    if board.is_game_over():
+        await game_over(ctx, board, state)
+    else:
+        await ai_move(ctx, board, state)
+        if board.is_game_over():
+            await game_over(ctx, board, state)
 
 @client.command()
 async def legalmoves(ctx):
     global board
-    out = 'Your current legal moves are: \n'
+    out = 'legal moves: \n'
     for move in board.legal_moves:
         out = out + str(board.san(move)) + ', '
 
@@ -93,6 +98,53 @@ async def ping(ctx):
     await ctx.send('bing')
     await ctx.send('bong')
     await ctx.send('donkey kong')
+
+@client.command()
+async def movehelp(ctx):
+    helptxt = """```\
+Enter a move with the !move command.  eg:
+    !move Be4
+
+Moves are entered in algebraic notation. https://en.wikipedia.org/wiki/Algebraic_notation_(chess)
+
+Each piece type is given a letter:
+    King:   K
+    Queen:  Q
+    Rook:   R
+    Bishop: B
+    Knight: N
+    Pawn:   nothing
+
+Moves are typically given as <piece letter><destination>
+    eg: 'Move bishop to e5' is 'Be5'
+
+Since pawns have no letter, advancing a pawn would just look like 'b3'
+
+If multiple pieces of the same type could be moved to the same square, you can disambiguate which piece to move by specifying the rank, file, or both if needed.
+    eg: 'Move the rook on the b file to d4' is 'Rbd4'
+    or: 'Move the bishop on rank 6 to d4' is 'B6d4'
+
+Captures can be identified with an x.
+    eg: 'Bishop captures piece on e2' is 'Bxe2'
+
+To castle king-side: 'O-O'
+To castle queen-side: 'O-O-O'
+
+i didn't come up with this don't get mad at me
+```"""
+    await print_msg(ctx, helptxt)
+
+async def game_over(ctx, board, state):
+    await print_msg(ctx, 'GAME OVER');
+    if board.result() == '1-0':
+        await print_msg(ctx, 'YOU FUCKING WON YOU MAD CUNTS @here');
+    elif board.result() == '0-1':
+        await print_msg(ctx, 'you lost and you suck');
+    elif board.result() == '1/2-1/2':
+        await print_msg(ctx, 'it was a draw or a stalemate or something idk yawn');
+    await print_msg(ctx, 'Move list if you want to analyse this game for some reason');
+    await print_msg(ctx, chess.Board().variation_san(board.move_stack)); 
+    await print_msg(ctx, 'Type !reset to play again');
 
 def is_legal_move(board, san):
     try:
