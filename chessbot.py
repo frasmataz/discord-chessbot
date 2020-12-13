@@ -1,6 +1,8 @@
 import chess
+import chess.engine
 import os
 import json
+import re
 from pprint import pprint
 import discord
 from discord.utils import get
@@ -17,6 +19,7 @@ with open('props.json') as json_file:
     emoji_names = data['emoji_names']
 
 client = commands.Bot(command_prefix = '!')
+engine = chess.engine.SimpleEngine.popen_uci('/usr/games/stockfish')
 
 @client.event
 async def on_ready():
@@ -31,7 +34,7 @@ async def on_ready():
     state['player_color'] = chess.WHITE
 
 @client.command()
-async def resetboard(ctx):
+async def reset(ctx):
     global board
     global state
 
@@ -39,21 +42,44 @@ async def resetboard(ctx):
     await print_board(ctx, board, state)
 
 @client.command()
-async def move(ctx, move):
+async def board(ctx):
+    global board
+    global state
+    await print_board(ctx, board, state)
+
+@client.command()
+async def move(ctx, move_str=None):
     global board
     global state
 
+    if move_str == None:
+        await print_msg(ctx, 'No move provided, usage: !move Bc4')
+        return
+    
+    if state['player_color'] != board.turn:
+        await print_msg(ctx, 'it\'s not your turn.')
+        return
+
+    if board.is_game_over():
+        await print_msg(ctx, 'the game\'s over mate.. move on')
+        return
+   
+    if is_legal_move(board, move_str) == False:
+        await print_msg(ctx, 'that\'s not something you can do')
+        return
+    
     try:
-        board.push_san(move)
-    except ValueError:
-        await print_msg(ctx, 'you can\'t do that you tit')
+        board.push_san(move_str)
+    except e:
+        await print_msg(ctx, 'okay i didn\'t understand that, and i don\'t know why i didn\'t understand that')
         return
 
     await print_board(ctx, board, state)
+    await ai_move(ctx, board, state)
     
 
 @client.command()
-async def getlegalmoves(ctx):
+async def legalmoves(ctx):
     global board
     out = 'Your current legal moves are: \n'
     for move in board.legal_moves:
@@ -67,6 +93,24 @@ async def ping(ctx):
     await ctx.send('bing')
     await ctx.send('bong')
     await ctx.send('donkey kong')
+
+def is_legal_move(board, san):
+    try:
+        board.parse_san(san)
+        return True
+    except ValueError:
+        return False
+
+    return False
+
+async def ai_move(ctx, board, state):
+    if state['player_color'] != board.turn and not board.is_game_over():
+        await print_msg(ctx, 'AI is making a move..')
+        result = engine.play(board, chess.engine.Limit(time=0.1)).move
+        result_str = str(board.san(result))
+        await print_msg(ctx, 'AI moved ' + result_str)
+        board.push(result)
+        await print_board(ctx, board, state)
 
 async def print_status(ctx, board, state):
     out = ''
